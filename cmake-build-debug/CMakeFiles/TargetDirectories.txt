@@ -1,0 +1,3 @@
+/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/370a1.dir
+/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/edit_cache.dir

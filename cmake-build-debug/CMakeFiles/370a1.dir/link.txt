@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/370a1.dir/main.cpp.o  -o 370a1 

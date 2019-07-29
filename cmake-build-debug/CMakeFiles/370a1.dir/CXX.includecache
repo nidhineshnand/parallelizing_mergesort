@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/media/nidhinesh/Data/University/370/370a1/main.cpp
+stdio.h
+-
+stdlib.h
+-
+unistd.h
+-
+string.h
+-
+sys/resource.h
+-
+stdbool.h
+-
+
