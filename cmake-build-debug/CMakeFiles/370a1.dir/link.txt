@@ -1,1 +1,1 @@
-/usr/bin/c++  -g   CMakeFiles/370a1.dir/main.cpp.o  -o 370a1 
+/usr/bin/cc -g   CMakeFiles/370a1.dir/a1.1.c.c.o CMakeFiles/370a1.dir/a1.2.c.o  -o 370a1 

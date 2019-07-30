@@ -84,7 +84,10 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/media/nidhinesh/Data/University/370/370a1/main.cpp">
+		<Unit filename="/media/nidhinesh/Data/University/370/370a1/a1.1.c.c">
+			<Option target="370a1"/>
+		</Unit>
+		<Unit filename="/media/nidhinesh/Data/University/370/370a1/a1.2.c">
 			<Option target="370a1"/>
 		</Unit>
 		<Unit filename="/media/nidhinesh/Data/University/370/370a1/CMakeLists.txt">

@@ -16,7 +16,7 @@
 #include <sys/resource.h>
 #include <stdbool.h>
 
-#define SIZE    2
+#define SIZE    100
 
 struct block {
     int size;
@@ -72,12 +72,23 @@ bool is_sorted(int data[], int size) {
 
 int main(int argc, char *argv[]) {
     long size;
+    struct rlimit rlim;
 
     if (argc < 2) {
         size = SIZE;
     } else {
         size = atol(argv[1]);
     }
+
+    //Getting rlimit for memory ans setting new limit
+    int val = getrlimit(RLIMIT_AS, &rlim);
+
+    rlim.rlim_cur = size*10;
+    if(setrlimit(RLIMIT_STACK, &rlim) != 0){
+        perror("WARNING: memory limit couldn't be set:");
+    }
+
+
     struct block start_block;
     int data[size];
     start_block.size = size;
@@ -85,6 +96,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < size; i++) {
         data[i] = rand();
     }
+
     printf("starting---\n");
     merge_sort(&start_block);
     printf("---ending\n");

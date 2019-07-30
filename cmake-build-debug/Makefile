@@ -123,32 +123,59 @@ depend:
 	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/build
 .PHONY : 370a1/fast
 
-main.o: main.cpp.o
+a1.1.c.o: a1.1.c.c.o
 
-.PHONY : main.o
+.PHONY : a1.1.c.o
 
 # target to build an object file
-main.cpp.o:
-	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/main.cpp.o
-.PHONY : main.cpp.o
+a1.1.c.c.o:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.1.c.c.o
+.PHONY : a1.1.c.c.o
 
-main.i: main.cpp.i
+a1.1.c.i: a1.1.c.c.i
 
-.PHONY : main.i
+.PHONY : a1.1.c.i
 
 # target to preprocess a source file
-main.cpp.i:
-	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/main.cpp.i
-.PHONY : main.cpp.i
+a1.1.c.c.i:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.1.c.c.i
+.PHONY : a1.1.c.c.i
 
-main.s: main.cpp.s
+a1.1.c.s: a1.1.c.c.s
 
-.PHONY : main.s
+.PHONY : a1.1.c.s
 
 # target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/main.cpp.s
-.PHONY : main.cpp.s
+a1.1.c.c.s:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.1.c.c.s
+.PHONY : a1.1.c.c.s
+
+a1.2.o: a1.2.c.o
+
+.PHONY : a1.2.o
+
+# target to build an object file
+a1.2.c.o:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.2.c.o
+.PHONY : a1.2.c.o
+
+a1.2.i: a1.2.c.i
+
+.PHONY : a1.2.i
+
+# target to preprocess a source file
+a1.2.c.i:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.2.c.i
+.PHONY : a1.2.c.i
+
+a1.2.s: a1.2.c.s
+
+.PHONY : a1.2.s
+
+# target to generate assembly for a file
+a1.2.c.s:
+	$(MAKE) -f CMakeFiles/370a1.dir/build.make CMakeFiles/370a1.dir/a1.2.c.s
+.PHONY : a1.2.c.s
 
 # Help Target
 help:
@@ -159,9 +186,12 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... 370a1"
 	@echo "... edit_cache"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... a1.1.c.o"
+	@echo "... a1.1.c.i"
+	@echo "... a1.1.c.s"
+	@echo "... a1.2.o"
+	@echo "... a1.2.i"
+	@echo "... a1.2.s"
 .PHONY : help
 
 

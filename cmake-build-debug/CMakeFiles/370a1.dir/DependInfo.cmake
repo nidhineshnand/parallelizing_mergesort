@@ -1,15 +1,16 @@
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
-  "CXX"
+  "C"
   )
 # The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_CXX
-  "/media/nidhinesh/Data/University/370/370a1/main.cpp" "/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/370a1.dir/main.cpp.o"
+set(CMAKE_DEPENDS_CHECK_C
+  "/media/nidhinesh/Data/University/370/370a1/a1.1.c.c" "/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/370a1.dir/a1.1.c.c.o"
+  "/media/nidhinesh/Data/University/370/370a1/a1.2.c" "/media/nidhinesh/Data/University/370/370a1/cmake-build-debug/CMakeFiles/370a1.dir/a1.2.c.o"
   )
-set(CMAKE_CXX_COMPILER_ID "GNU")
+set(CMAKE_C_COMPILER_ID "GNU")
 
 # The include file search paths:
-set(CMAKE_CXX_TARGET_INCLUDE_PATH
+set(CMAKE_C_TARGET_INCLUDE_PATH
   )
 
 # Targets to which this target links.
