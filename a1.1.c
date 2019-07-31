@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
+    //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
 
     rlim.rlim_cur = size*10;

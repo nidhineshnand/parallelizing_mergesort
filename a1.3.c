@@ -22,7 +22,7 @@
 
 
 
-#define SIZE    100000000
+#define SIZE    5
 #define PTHREAD_STACK_MIN 16384
 
 #define handle_error_en(en, msg) \
@@ -32,6 +32,8 @@ struct block {
     int size;
     int *first;
 };
+
+void *merge_sort_multi(void *args);
 
 // void print_block_data(struct block *blk) {
 //     printf("size: %d address: %p\n", blk->size, blk->first);
@@ -54,27 +56,44 @@ void merge(struct block *left, struct block *right) {
     memmove(left->first, combined, (left->size + right->size) * sizeof(int));
 }
 
+
 /* Merge sort the data. */
 void merge_sort(struct block *my_data) {
     // print_block_data(my_data);
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
+
         left_block.size = my_data->size / 2;
         left_block.first = my_data->first;
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size;
-        merge_sort(&left_block);
-        merge_sort(&right_block);
+
+        //Creating a thread everytime the merge_sort function is called
+        pthread_t thread_left, thread_right;
+        int err = pthread_create(&thread_left, NULL, merge_sort_multi , (void*)&left_block);
+        if (err){
+            perror("WARNING: thread could not be created:");
+        }
+
+        err = pthread_create(&thread_right, NULL, merge_sort_multi , (void*)&right_block);
+        if (err){
+            perror("WARNING: thread could not be created:");
+        }
+        
+        //Joining threads to allow them to be merged
+        pthread_join(thread_left, NULL);
+        pthread_join(thread_right, NULL);
+
         merge(&left_block, &right_block);
     }
 }
+
 /* Merge sort the data. */
 void *merge_sort_multi(void *args) {
     struct block *my_data = args;
     merge_sort(my_data);
 }
-
 
 /* Check to see if the data is sorted. */
 bool is_sorted(int data[], int size) {
@@ -87,7 +106,7 @@ bool is_sorted(int data[], int size) {
 }
 
 int main(int argc, char *argv[]) {
-   long size;
+    long size;
     struct rlimit rlim;
 
     if (argc < 2) {
@@ -96,7 +115,7 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
+    //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
     rlim.rlim_cur = size*10;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
@@ -109,14 +128,16 @@ int main(int argc, char *argv[]) {
     if (s != 0){
         handle_error_en(s, "pthread_attr_init");
     }
+
     //Setting new memory limit on thread
     size_t stack_size;
-    pthread_attr_getstacksize(&attr,&stack_size);
+    pthread_attr_getstacksize(&attr, &stack_size);
     
     stack_size = size*8;
     if( stack_size > PTHREAD_STACK_MIN){
         s = pthread_attr_setstacksize(&attr, stack_size);
     }
+    
     if (s != 0){
         handle_error_en(s, "pthread_attr_setstacksize");
     }
@@ -129,37 +150,9 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
-    //Setting the different halves of the block
-    struct block left_block;
-    struct block right_block;
-    left_block.size = start_block.size / 2;
-    left_block.first = start_block.first;
-    right_block.size = left_block.size + (start_block.size % 2);
-    right_block.first = start_block.first + left_block.size;
-
-    //Creating new thread
-    pthread_t thread;
-    int err;
-
     printf("starting---\n");
 
-    //Error checking for thread
-    err = pthread_create(&thread, &attr, merge_sort_multi , (void*)&left_block);
-
-    if (err){
-        printf("An error occured: %d", err);
-        return 1;
-    }
-
-    s = pthread_attr_destroy(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_destroy");
-    }
-
-    merge_sort(&right_block);
-    pthread_join(thread, NULL);
-    merge( &left_block, &right_block);
-
+    merge_sort(&start_block);
     printf("---ending\n");
     printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
     exit(EXIT_SUCCESS);
