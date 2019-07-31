@@ -30,15 +30,13 @@
 
 long number_of_processors;
 int number_of_threads;
-pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
-pthread_attr_t attr;
+
+pthread_mutex_t mut;
 
 struct block {
     int size;
     int *first;
 };
-
-void *merge_sort_multi(void *args);
 
 // void print_block_data(struct block *blk) {
 //     printf("size: %d address: %p\n", blk->size, blk->first);
@@ -61,77 +59,73 @@ void merge(struct block *left, struct block *right) {
     memmove(left->first, combined, (left->size + right->size) * sizeof(int));
 }
 
-
 /* Merge sort the data. */
-void merge_sort(struct block *my_data) {
+void *merge_sort(void *args) {
+    struct block *my_data = args;
+
+    int s;
+    pthread_attr_t attr;
+    s = pthread_attr_init(&attr);
+    if (s != 0){
+        handle_error_en(s, "pthread_attr_init");
+    }
+    //Setting new memory limit on thread
+
+    s = pthread_attr_setstacksize(&attr, 512L * 1024L * 1024L);
+    if (s != 0){
+        handle_error_en(s, "pthread_attr_setstacksize");
+    }
+    
     // print_block_data(my_data);
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
-        int created_thread_right, created_thread_left;
-
         left_block.size = my_data->size / 2;
         left_block.first = my_data->first;
         right_block.size = left_block.size + (my_data->size % 2);
-        right_block.first = my_data->first + left_block.size;
-
-        //pthread_mutex_lock(&mut);
-        //printf("\nThreads used: %d", number_of_threads);
-        //pthread_mutex_unlock(&mut);
+        right_block.first = my_data->first + left_block.size; 
+    
+        pthread_t thread_left;
+        int err, s, thread_left_created;
+        thread_left_created = 0;
 
         int error = pthread_mutex_lock(&mut);
-        if (error == 0 && number_of_threads < number_of_processors){
+        if (error == 0 && number_of_threads < number_of_processors - 1){
             number_of_threads++;
             pthread_mutex_unlock(&mut);
-            created_thread_left = 1;
+            thread_left_created = 1;
 
             //Creating a thread everytime the merge_sort function is called
-            pthread_t thread_left;
-            int err = pthread_create(&thread_left, &attr, merge_sort_multi , (void*)&left_block);
+            err = pthread_create(&thread_left, &attr, merge_sort , (void*)&left_block);
             if (err){
                 perror("WARNING: thread could not be created:");
             }
-            pthread_join(thread_left, NULL);
 
-            pthread_mutex_lock(&mut);
-            number_of_threads--;
-            pthread_mutex_unlock(&mut);
         } else{
             pthread_mutex_unlock(&mut);
             merge_sort(&left_block);
         }
 
-        pthread_mutex_lock(&mut);
-        if (error == 0 && number_of_threads < number_of_processors){
-            number_of_threads++;
-            pthread_mutex_unlock(&mut);
 
-            //Creating a thread everytime the merge_sort function is called
-            pthread_t thread_right;
-            int err = pthread_create(&thread_right, &attr, merge_sort_multi , (void*)&right_block);
-            if (err){
-                perror("WARNING: thread could not be created:");
-            }
-            pthread_join(thread_right, NULL);
+        //pthread_mutex_lock(&mut);
+        //printf("\nThreads used: %d", number_of_threads);
+        //pthread_mutex_unlock(&mut);
 
+        merge_sort(&right_block);
+
+        if(thread_left_created){
+            pthread_join(thread_left, NULL);
+
+            //Decrementing counter for threads
             pthread_mutex_lock(&mut);
             number_of_threads--;
             pthread_mutex_unlock(&mut);
-            
-        } else{
-            pthread_mutex_unlock(&mut);
-            merge_sort(&right_block);
         }
-
+        
         merge(&left_block, &right_block);
     }
 }
 
-/* Merge sort the data. */
-void *merge_sort_multi(void *args) {
-    struct block *my_data = args;
-    merge_sort(my_data);
-}
 
 /* Check to see if the data is sorted. */
 bool is_sorted(int data[], int size) {
@@ -146,6 +140,7 @@ bool is_sorted(int data[], int size) {
 int main(int argc, char *argv[]) {
     long size;
     struct rlimit rlim;
+    pthread_mutex_init(&mut, NULL);
 
     //Getting the number of threads online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -157,33 +152,13 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory and setting new limit
-    int val = getrlimit(RLIMIT_AS, &rlim);
-    rlim.rlim_cur = size*10;
+    //Getting rlimit for memory ans setting new limit
+    int val = getrlimit(RLIMIT_STACK, &rlim);
+    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
         perror("WARNING: memory limit couldn't be set:");
     }
-
-    int s;
     
-    s = pthread_attr_init(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_init");
-    }
-
-    //Setting new memory limit on thread
-    size_t stack_size;
-    pthread_attr_getstacksize(&attr, &stack_size);
-    
-    stack_size = size*8;
-    if( stack_size > PTHREAD_STACK_MIN){
-        s = pthread_attr_setstacksize(&attr, stack_size);
-    }
-    
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_setstacksize");
-    }
-
     struct block start_block;
     int data[size];
     start_block.size = size;
@@ -193,7 +168,6 @@ int main(int argc, char *argv[]) {
     }
 
     printf("starting---\n");
-
     merge_sort(&start_block);
     printf("---ending\n");
     printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
