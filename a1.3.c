@@ -27,7 +27,7 @@
 
 #define handle_error_en(en, msg) \
     do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
-
+pthread_attr_t attr;
 struct block {
     int size;
     int *first;
@@ -76,7 +76,7 @@ void merge_sort(struct block *my_data) {
             perror("WARNING: thread could not be created:");
         }
 
-        err = pthread_create(&thread_right, NULL, merge_sort_multi , (void*)&right_block);
+        err = pthread_create(&thread_right, &attr, merge_sort_multi , (void*)&right_block);
         if (err){
             perror("WARNING: thread could not be created:");
         }
@@ -123,7 +123,6 @@ int main(int argc, char *argv[]) {
     }
 
     int s;
-    pthread_attr_t attr;
     s = pthread_attr_init(&attr);
     if (s != 0){
         handle_error_en(s, "pthread_attr_init");
