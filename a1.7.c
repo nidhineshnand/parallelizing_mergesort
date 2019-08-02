@@ -159,22 +159,6 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
-        //Setting the different halves of the block
-    struct block left_block;
-    struct block right_block;
-
-    left_block.size = start_block.size / 2;
-    left_block.first = start_block.first;
-    right_block.size = left_block.size + (start_block.size % 2);
-    right_block.first = start_block.first + left_block.size;
-
-    int err, status;
-    int p[2];
-
-    if (pipe(p) == -1) {
-        perror("pipe");
-        exit(EXIT_FAILURE);
-    }
 
     printf("starting---\n");
     merge_sort(&start_block);
