@@ -23,9 +23,6 @@ struct block {
     int *first;
 };
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -82,12 +79,10 @@ int main(int argc, char *argv[]) {
 
     //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
-
     rlim.rlim_cur = size*10;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
         perror("WARNING: memory limit couldn't be set:");
     }
-
 
     struct block start_block;
     int data[size];
