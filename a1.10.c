@@ -21,22 +21,18 @@
 #include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/wait.h> 
+#include <math.h>
 
 
 
-#define SIZE    1000
+#define SIZE    100000000
 
 #define handle_error_en(en, msg) \
     do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 long number_of_processors;
-static int *number_of_processes;
-int status = 0;
-int parent;
-static int *data;
+static int number_of_processes;
 pthread_mutex_t *mut;
-
-
 
 struct block {
     int size;
@@ -65,7 +61,8 @@ void merge(struct block *left, struct block *right) {
 }
 
 /* Merge sort the data. */
-void merge_sort(struct block *my_data) {
+void *merge_sort(void *args) {
+    struct block *my_data = args;
     
     // print_block_data(my_data);
     if (my_data->size > 1) {
@@ -76,34 +73,52 @@ void merge_sort(struct block *my_data) {
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size; 
 
+
+        if (number_of_processes < number_of_processors ){
+            number_of_processes = number_of_processes + 1;
+
+            //Creating pipe
+            int pdata[2];
+
+            if (pipe(pdata) == -1) {
+                perror("pipe");
+                exit(EXIT_FAILURE);
+            }
+
             
+            int pid = getpid();
             int f = fork();
             if(f == 0) {
-                merge_sort(&right_block);      
-                exit(EXIT_SUCCESS);   
+                merge_sort(&right_block); 
+                close(pdata[0]);
+                write(pdata[1], right_block.first, right_block.size * sizeof(int));    
+                
+                exit(EXIT_SUCCESS);  
                 
             } else if ( f > 0) {
                 merge_sort(&left_block);
-                waitpid(f, NULL, 0);
+                close(pdata[1]);
+                read(pdata[0], right_block.first, right_block.size * sizeof(int));
                 merge( &left_block, &right_block);
-
+                
             } else {
                 perror("Failed to fork thread");
             }
             
-                //printf("%d\n", *number_of_processes);
+        } else {
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
-                  
+        }
+        
     }   
 }
+
 
 /* Check to see if the data is sorted. */
 bool is_sorted(int data[], int size) {
     bool sorted = true;
     for (int i = 0; i < size - 1; i++) {
-        //printf("Value: %d\n", data[i]);
         if (data[i] > data[i + 1])
             sorted = false;
     }
@@ -114,6 +129,10 @@ int main(int argc, char *argv[]) {
     long size;
     struct rlimit rlim;
 
+    //Getting the number of threads online
+    number_of_processors = floor(sqrt(sysconf(_SC_NPROCESSORS_ONLN)));
+    number_of_processes = 0;
+
 
     if (argc < 2) {
         size = SIZE;
@@ -121,7 +140,9 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory and setting new limit
+    int parent = getpid();
+
+    //Getting rlimit for memory ans setting new limit
     int val = getrlimit(RLIMIT_STACK, &rlim);
     rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
@@ -129,10 +150,7 @@ int main(int argc, char *argv[]) {
     }
 
     struct block start_block;
-    data =  mmap(NULL, sizeof(int) * size, PROT_READ | PROT_WRITE, 
-                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-
-
+    int data[size];
     start_block.size = size;
     start_block.first = data;
 
@@ -140,10 +158,14 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
+
     printf("starting---\n");
     merge_sort(&start_block);
-    printf("---ending\n");
-    printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
-    exit(EXIT_SUCCESS);
+    wait(0);
+    if (getpid() == parent){
+        printf("---ending\n");
+        printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
+        exit(EXIT_SUCCESS);
+    }
 
 }
