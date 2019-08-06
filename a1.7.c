@@ -31,6 +31,7 @@
 
 long number_of_processors;
 static int *number_of_processes;
+pthread_mutex_t *mut;
 
 struct block {
     int size;
@@ -71,9 +72,10 @@ void *merge_sort(void *args) {
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size; 
 
-
+        pthread_mutex_lock(mut);
         if (*number_of_processes < number_of_processors - 1){
             *number_of_processes = *number_of_processes + 1;
+            pthread_mutex_unlock(mut);
             //Creating pipe
             int pdata[2];
 
@@ -89,16 +91,18 @@ void *merge_sort(void *args) {
                 merge_sort(&right_block); 
                 close(pdata[0]);
                 write(pdata[1], right_block.first, right_block.size * sizeof(int));    
+
+                pthread_mutex_lock(mut);
+                *number_of_processes = *number_of_processes - 1;
+                pthread_mutex_unlock(mut);
                 
-                if (pid == getpid()){
-                    *number_of_processes = *number_of_processes - 1;
-                }
+                exit(EXIT_SUCCESS);  
                 
             } else if ( f > 0) {
                 merge_sort(&left_block);
                 close(pdata[1]);
                 read(pdata[0], right_block.first, right_block.size * sizeof(int));
-                wait(0);
+                waitpid(f, NULL, 0);
                 merge( &left_block, &right_block);
                 
             } else {
@@ -106,6 +110,7 @@ void *merge_sort(void *args) {
             }
             
         } else {
+                pthread_mutex_unlock(mut);
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -134,6 +139,14 @@ int main(int argc, char *argv[]) {
     number_of_processes = (int*)mmap(NULL, sizeof *number_of_processes, PROT_READ | PROT_WRITE, 
                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *number_of_processes = 0;
+
+    mut =  mmap(NULL, sizeof(*mut), PROT_READ | PROT_WRITE, 
+            MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(mut, &attr);
 
     if (argc < 2) {
         size = SIZE;
