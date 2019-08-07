@@ -20,22 +20,14 @@
 #include <errno.h>
 #include <inttypes.h>
 
-
-
 #define SIZE    100000000
 #define PTHREAD_STACK_MIN 16384
 
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 struct block {
     int size;
     int *first;
 };
-
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {

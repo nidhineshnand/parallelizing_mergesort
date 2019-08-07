@@ -18,6 +18,8 @@
 
 #define SIZE    100000000
 
+#define STACK_SIZE_MIN 16777216 //16MB
+
 struct block {
     int size;
     int *first;
@@ -78,7 +80,14 @@ int main(int argc, char *argv[]) {
 
     //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
-    rlim.rlim_cur = size*10;
+    
+    int stack_size = size*12;
+    if (stack_size > STACK_SIZE_MIN){
+        rlim.rlim_cur = size*12;
+    } else {
+        rlim.rlim_cur = stack_size;
+    }
+
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
         perror("WARNING: memory limit couldn't be set:");
         exit(EXIT_FAILURE);
