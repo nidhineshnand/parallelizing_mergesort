@@ -74,11 +74,13 @@ void merge_sort(struct block *my_data) {
         int err = pthread_create(&thread_left, NULL, merge_sort_multi , (void*)&left_block);
         if (err){
             perror("WARNING: thread could not be created:");
+            exit(EXIT_FAILURE);
         }
 
         err = pthread_create(&thread_right, &attr, merge_sort_multi , (void*)&right_block);
         if (err){
             perror("WARNING: thread could not be created:");
+            exit(EXIT_FAILURE);
         }
         
         //Joining threads to allow them to be merged

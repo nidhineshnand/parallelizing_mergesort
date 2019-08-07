@@ -13,8 +13,8 @@ cc $file "a1.8.c" -o a8.out -lpthread
 cc $file "a1.9.c" -o a9.out -lpthread
 cc $file "a1.10.c" -o a10.out -lpthread -lm
 
-for i in {1..10}
+for i in {1..10}; do
     echo "Test Part $i"
-    grep cpu | time ./"a$i.out" 10000000 
+    time ./"a$i.out" 1000000 | grep real
     echo "              "
 done
