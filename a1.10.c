@@ -74,7 +74,7 @@ void *merge_sort(void *args) {
         right_block.first = my_data->first + left_block.size; 
 
 
-        if (number_of_processes < number_of_processors ){
+        if (number_of_processes < number_of_processors){
             number_of_processes = number_of_processes + 1;
 
             //Creating pipe

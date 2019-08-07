@@ -73,7 +73,7 @@ void *merge_sort(void *args) {
         right_block.first = my_data->first + left_block.size; 
 
         pthread_mutex_lock(mut);
-        if (*number_of_processes < number_of_processors - 1){
+        if (*number_of_processes < number_of_processors){
             *number_of_processes = *number_of_processes + 1;
             pthread_mutex_unlock(mut);
             //Creating pipe

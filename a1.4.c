@@ -90,7 +90,7 @@ void *merge_sort(void *args) {
         thread_left_created = 0;
 
         int error = pthread_mutex_lock(&mut);
-        if (error == 0 && number_of_threads < number_of_processors - 1){
+        if (error == 0 && number_of_threads < number_of_processors){
             number_of_threads++;
             pthread_mutex_unlock(&mut);
             thread_left_created = 1;

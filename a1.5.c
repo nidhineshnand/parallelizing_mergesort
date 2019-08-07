@@ -91,7 +91,7 @@ void *merge_sort(void *args) {
         thread_left_created = 0;
 
         int error = pthread_spin_lock(&spinlock);
-        if (error == 0 && number_of_threads < number_of_processors - 1){
+        if (error == 0 && number_of_threads < number_of_processors){
             number_of_threads++;
             pthread_spin_unlock(&spinlock);
             thread_left_created = 1;
