@@ -43,7 +43,6 @@ void merge(struct block *left, struct block *right) {
 
 /* Merge sort the data. */
 void merge_sort(struct block *my_data) {
-    // print_block_data(my_data);
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
@@ -82,6 +81,7 @@ int main(int argc, char *argv[]) {
     rlim.rlim_cur = size*10;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
         perror("WARNING: memory limit couldn't be set:");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
