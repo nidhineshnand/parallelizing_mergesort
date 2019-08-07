@@ -22,6 +22,7 @@
 
 #define SIZE    100000000
 #define PTHREAD_STACK_MIN 16384
+#define STACK_SIZE_MIN 16777216 //16MB
 
 
 struct block {
@@ -90,9 +91,12 @@ int main(int argc, char *argv[]) {
 
     //Getting rlimit for memory ans setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
-    rlim.rlim_cur = size*10;
-    if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+    
+    int stack_size = size*12;
+    if (stack_size > STACK_SIZE_MIN){
+        rlim.rlim_cur = size*12;
+    } else {
+        rlim.rlim_cur = stack_size;
     }
 
     int s;
