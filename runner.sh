@@ -15,6 +15,6 @@ cc $file "a1.10.c" -o a10.out -lpthread -lm
 
 for i in {1..10}; do
     echo "Test Part $i"
-    time ./"a$i.out" 1000000 | grep real
+    time ./"a$i.out" 10000000
     echo "              "
 done

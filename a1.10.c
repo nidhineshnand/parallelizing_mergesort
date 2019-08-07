@@ -31,8 +31,7 @@
     do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 long number_of_processors;
-static int number_of_processes;
-pthread_mutex_t *mut;
+static int level;
 
 struct block {
     int size;
@@ -74,8 +73,8 @@ void *merge_sort(void *args) {
         right_block.first = my_data->first + left_block.size; 
 
 
-        if (number_of_processes < number_of_processors){
-            number_of_processes = number_of_processes + 1;
+        if ( pow(2,(level + 1)) < number_of_processors + 1){
+            level = level + 1;
 
             //Creating pipe
             int pdata[2];
@@ -130,8 +129,8 @@ int main(int argc, char *argv[]) {
     struct rlimit rlim;
 
     //Getting the number of threads online
-    number_of_processors = floor(sqrt(sysconf(_SC_NPROCESSORS_ONLN)));
-    number_of_processes = 0;
+    level = 0;
+    number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
 
 
     if (argc < 2) {
