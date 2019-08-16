@@ -109,7 +109,7 @@ void *merge_sort(void *args) {
             
         } else {
                 pthread_mutex_unlock(mut); //Mut lock at top of if statement freed here
-                //If number_of_threads > number of processors available, mergesort is run on the same process as parent
+                //If number_of_processes > number of processors available, mergesort is run on the same process as parent
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
     long size;
     struct rlimit rlim;
 
-    //Getting the number of threads online
+    //Getting the number of processors online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
 
     //Creating shared memory for number_of_processes variable 

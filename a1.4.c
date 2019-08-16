@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
     struct rlimit rlim;
     pthread_mutex_init(&mut, NULL);
 
-    //Getting the number of threads online
+    //Getting the number of processors online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
     number_of_threads = 0;
 

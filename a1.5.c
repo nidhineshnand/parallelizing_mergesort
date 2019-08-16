@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
     //Initilizing spin locks
     pthread_spin_init(&spinlock, 0);
 
-    //Getting the number of threads online
+    //Getting the number of processors online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
     number_of_threads = 0;
 

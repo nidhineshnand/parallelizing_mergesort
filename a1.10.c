@@ -23,12 +23,7 @@
 #include <sys/wait.h> 
 #include <math.h>
 
-
-
 #define SIZE    100000000
-
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 long number_of_processors;
 static int level;
@@ -38,9 +33,6 @@ struct block {
     int *first;
 };
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -72,39 +64,44 @@ void *merge_sort(void *args) {
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size; 
 
-
+        //Calculating the number of processes that would have already been used
         if ( pow(2,(level + 1)) < number_of_processors + 1){
             level = level + 1;
 
             //Creating pipe
             int pdata[2];
-
             if (pipe(pdata) == -1) {
                 perror("pipe");
                 exit(EXIT_FAILURE);
             }
 
-            
-            int pid = getpid();
+            //Forking new process
             int f = fork();
+            //Mergesort right block on the child process
             if(f == 0) {
                 merge_sort(&right_block); 
+                //Return sorted array to parent process through pipe
                 close(pdata[0]);
                 write(pdata[1], right_block.first, right_block.size * sizeof(int));    
                 
                 exit(EXIT_SUCCESS);  
                 
+            //Mergesort left block on the parent process
             } else if ( f > 0) {
                 merge_sort(&left_block);
+
+                //Reading right array sorted data sent by the child process from the pipe
                 close(pdata[1]);
                 read(pdata[0], right_block.first, right_block.size * sizeof(int));
                 merge( &left_block, &right_block);
                 
             } else {
-                perror("Failed to fork thread");
+                perror("Error: Failed to fork thread");
+                exit(EXIT_FAILURE);
             }
             
         } else {
+             //If number_of_processes > number of processors available, mergesort is run on the same process as parent
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -128,10 +125,9 @@ int main(int argc, char *argv[]) {
     long size;
     struct rlimit rlim;
 
-    //Getting the number of threads online
+    //Getting the number of processors online
     level = 0;
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
-
 
     if (argc < 2) {
         size = SIZE;
@@ -139,13 +135,12 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    int parent = getpid();
-
-    //Getting rlimit for memory ans setting new limit
+    //Getting rlimit for memory and setting new limitit
     int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("WARNING: memory limit couldn't be set");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
@@ -157,14 +152,13 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
-
     printf("starting---\n");
     merge_sort(&start_block);
+    //Waiting for child processes to finish
     wait(0);
-    if (getpid() == parent){
-        printf("---ending\n");
-        printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
-        exit(EXIT_SUCCESS);
-    }
+    printf("---ending\n");
+    printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
+    exit(EXIT_SUCCESS);
+
 
 }
