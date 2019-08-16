@@ -21,16 +21,12 @@
 #include <errno.h>
 #include <inttypes.h>
 
-
-
 #define SIZE    100000000
 #define PTHREAD_STACK_MIN 16384
 
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
-
 long number_of_processors;
 int number_of_threads;
+long size;
 
 pthread_spinlock_t spinlock; 
 
@@ -39,9 +35,6 @@ struct block {
     int *first;
 };
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -64,20 +57,26 @@ void merge(struct block *left, struct block *right) {
 void *merge_sort(void *args) {
     struct block *my_data = args;
 
-    int s;
+    int err;
     pthread_attr_t attr;
-    s = pthread_attr_init(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_init");
-    }
-    //Setting new memory limit on thread
 
-    s = pthread_attr_setstacksize(&attr, 512L * 1024L * 1024L);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_setstacksize");
+    //Initilizing thread attribute
+    err = pthread_attr_init(&attr);
+    if (err != 0){
+        perror("Error: Thread attribute not initilized");
+        exit(EXIT_FAILURE);
+    }
+
+  //Setting stack size only if the size varible is greater then the lower limit of stack size
+    size_t stack_size = size*10;
+    if( stack_size > PTHREAD_STACK_MIN){
+        err = pthread_attr_setstacksize(&attr, stack_size);
+    }
+    if (err != 0){
+        perror("Error: Thread stack size was not be changed");
+        exit(EXIT_FAILURE);
     }
     
-    // print_block_data(my_data);
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
@@ -90,6 +89,7 @@ void *merge_sort(void *args) {
         int err, s, thread_left_created;
         thread_left_created = 0;
 
+        //Locking variable number_of_threads and creating thread if the variable is less them the number of cores in the system
         int error = pthread_spin_lock(&spinlock);
         if (error == 0 && number_of_threads < number_of_processors){
             number_of_threads++;
@@ -100,18 +100,16 @@ void *merge_sort(void *args) {
             err = pthread_create(&thread_left, &attr, merge_sort , (void*)&left_block);
             if (err){
                 perror("WARNING: thread could not be created:");
+                exit(EXIT_FAILURE);
             }
 
         } else{
+            //If number_of_threads > number of processors available, mergesort is run on the same thread as parent
             pthread_spin_unlock(&spinlock);
             merge_sort(&left_block);
         }
 
-
-        //pthread_mutex_lock(&mut);
-        //printf("\nThreads used: %d", number_of_threads);
-        //pthread_mutex_unlock(&mut);
-
+        //Running mergesort on the right block on the parent thread
         merge_sort(&right_block);
 
         if(thread_left_created){
@@ -139,7 +137,6 @@ bool is_sorted(int data[], int size) {
 }
 
 int main(int argc, char *argv[]) {
-    long size;
     struct rlimit rlim;
     
     //Initilizing spin locks
@@ -155,11 +152,12 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
+    //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("WARNING: memory limit couldn't be set");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;

@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
     rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
         perror("WARNING: memory limit couldn't be set");
+        exit(EXIT_FAILURE);
     }
     
     struct block start_block;
