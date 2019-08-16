@@ -121,6 +121,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    //Initializing thread attribute
     err = pthread_attr_init(&attr);
     if (err != 0){
         perror("Error: Thread attribute not initilized");
