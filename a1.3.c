@@ -25,8 +25,6 @@
 #define SIZE    5
 #define PTHREAD_STACK_MIN 16384
 
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 pthread_attr_t attr;
 struct block {
     int size;
@@ -35,9 +33,6 @@ struct block {
 
 void *merge_sort_multi(void *args);
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -73,13 +68,13 @@ void merge_sort(struct block *my_data) {
         pthread_t thread_left, thread_right;
         int err = pthread_create(&thread_left, NULL, merge_sort_multi , (void*)&left_block);
         if (err){
-            perror("WARNING: thread could not be created:");
+            perror("WARNING: Thread could not be created");
             exit(EXIT_FAILURE);
         }
 
         err = pthread_create(&thread_right, &attr, merge_sort_multi , (void*)&right_block);
         if (err){
-            perror("WARNING: thread could not be created:");
+            perror("WARNING: Thread could not be created");
             exit(EXIT_FAILURE);
         }
         
@@ -110,6 +105,7 @@ bool is_sorted(int data[], int size) {
 int main(int argc, char *argv[]) {
     long size;
     struct rlimit rlim;
+    int err;
 
     if (argc < 2) {
         size = SIZE;
@@ -119,28 +115,29 @@ int main(int argc, char *argv[]) {
 
     //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
-    rlim.rlim_cur = size*10;
+    rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("Error: Memory limit couldn't be set:");
+        exit(EXIT_FAILURE);
     }
 
-    int s;
-    s = pthread_attr_init(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_init");
+    err = pthread_attr_init(&attr);
+    if (err != 0){
+        perror("Error: Thread attribute not initilized");
+        exit(EXIT_FAILURE);
     }
 
     //Setting new memory limit on thread
     size_t stack_size;
     pthread_attr_getstacksize(&attr, &stack_size);
     
-    stack_size = size*8;
+    stack_size = size*10;
     if( stack_size > PTHREAD_STACK_MIN){
-        s = pthread_attr_setstacksize(&attr, stack_size);
+        err = pthread_attr_setstacksize(&attr, stack_size);
     }
-    
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_setstacksize");
+    if (err != 0){
+        perror("Error: Thread stack size was not be changed");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;

@@ -93,7 +93,8 @@ int main(int argc, char *argv[]) {
     rlim.rlim_cur = size*12;
 
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: Memory limit couldn't be set:");
+        perror("Error: Memory limit couldn't be set:");
+        exit(EXIT_FAILURE);
     }
 
     //Initilizing attribute for thread
@@ -101,7 +102,8 @@ int main(int argc, char *argv[]) {
     pthread_attr_t attr;
     err = pthread_attr_init(&attr);
     if (err != 0){
-        perror("Warning: Thread attribute not initilized");
+        perror("Error: Thread attribute not initilized");
+        exit(EXIT_FAILURE);
     }
 
     //Setting new memory limit on thread
@@ -115,7 +117,8 @@ int main(int argc, char *argv[]) {
         err = pthread_attr_setstacksize(&attr, stack_size);
     }
     if (err != 0){
-        perror("Warning: Thread stack size was not be changed");
+        perror("Error: Thread stack size was not be changed");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
@@ -141,8 +144,8 @@ int main(int argc, char *argv[]) {
      //Creating new thread with set attributes and callng merge sort
     err = pthread_create(&thread, &attr, merge_sort_multi , (void*)&left_block);
     if (err){
-        printf("An error occured: %d", err);
-        return 1;
+        perror("Error: Thread could not be created");
+        exit(EXIT_FAILURE);
     }
 
     err = pthread_attr_destroy(&attr);
