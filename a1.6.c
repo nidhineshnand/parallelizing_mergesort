@@ -25,17 +25,11 @@
 
 #define SIZE    100000
 
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
-
 struct block {
     int size;
     int *first;
 };
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -90,11 +84,13 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
-    int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    //Getting rlimit for stack and setting new limit
+    int val = getrlimit(RLIMIT_AS, &rlim);
+    rlim.rlim_cur = size*12;
+
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("Error: Memory limit couldn't be set:");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
@@ -117,6 +113,7 @@ int main(int argc, char *argv[]) {
     int err, status;
     int p[2];
 
+    //Creating pipe for data transfer from child process to parent process
     if (pipe(p) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);
@@ -124,20 +121,25 @@ int main(int argc, char *argv[]) {
 
     printf("starting---\n");
 
+    //Forking new process
     int f = fork();
-    
+    //Mergesort right block on the child process
     if(f == 0) {
         merge_sort(&right_block);
         
+        //Return sorted array to parent process through pupe
         close(p[0]);
         write(p[1], right_block.first, right_block.size * sizeof(int));    
 
-    } else if ( f > 0) {
+    //Mergesort left block on the parent process
+    } else if ( f > 0) { 
         merge_sort(&left_block);
-        //wait(0);
-        close(p[1]);
 
+        //Reading right array sorted data sent by the child process from the pope
+        close(p[1]);
         read(p[0], right_block.first, right_block.size * sizeof(int));
+
+        //Merging both sides of the array
         merge( &left_block, &right_block);
 
         printf("---ending\n");
@@ -145,7 +147,8 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
         
     } else {
-        perror("Failed to fork thread");
+        perror("Error: Failed to fork thread");
+        exit(EXIT_FAILURE);
     }
      
 }

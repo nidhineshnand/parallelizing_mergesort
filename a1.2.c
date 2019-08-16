@@ -22,7 +22,6 @@
 
 #define SIZE    100000000
 #define PTHREAD_STACK_MIN 16384
-#define STACK_SIZE_MIN 16777216 //16MB
 
 struct block {
     int size;
@@ -153,7 +152,7 @@ int main(int argc, char *argv[]) {
     }
 
     merge_sort(&right_block);
-    
+
     //Joining thread before merging
     pthread_join(thread, NULL);
     merge( &left_block, &right_block);
