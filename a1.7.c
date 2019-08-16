@@ -22,12 +22,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h> 
 
-
-
 #define SIZE    100000000
-
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 long number_of_processors;
 static int *number_of_processes;
@@ -37,10 +32,6 @@ struct block {
     int size;
     int *first;
 };
-
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -62,6 +53,7 @@ void merge(struct block *left, struct block *right) {
 /* Merge sort the data. */
 void *merge_sort(void *args) {
     struct block *my_data = args;
+    int err;
     
     // print_block_data(my_data);
     if (my_data->size > 1) {
@@ -72,45 +64,53 @@ void *merge_sort(void *args) {
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size; 
 
+        //Locking number_of_processes and checking to see if a new process can be created
         pthread_mutex_lock(mut);
         if (*number_of_processes < number_of_processors){
             *number_of_processes = *number_of_processes + 1;
             pthread_mutex_unlock(mut);
+            
             //Creating pipe
             int pdata[2];
-
             if (pipe(pdata) == -1) {
                 perror("pipe");
                 exit(EXIT_FAILURE);
             }
 
-            
-            int pid = getpid();
+            //Forking new process
             int f = fork();
+            //Mergesort right block on the child process
             if(f == 0) {
                 merge_sort(&right_block); 
+                //Return sorted array to parent process through pipe
                 close(pdata[0]);
                 write(pdata[1], right_block.first, right_block.size * sizeof(int));    
 
+                //Decrementing number_of_processes counter as the child process has finished
                 pthread_mutex_lock(mut);
                 *number_of_processes = *number_of_processes - 1;
                 pthread_mutex_unlock(mut);
                 
                 exit(EXIT_SUCCESS);  
                 
+            //Mergesort left block on the parent process
             } else if ( f > 0) {
                 merge_sort(&left_block);
+
+                //Reading right array sorted data sent by the child process from the pipe
                 close(pdata[1]);
                 read(pdata[0], right_block.first, right_block.size * sizeof(int));
-                waitpid(f, NULL, 0);
+                waitpid(f, NULL, 0); //Waiting for child process to completely finish to merge the data
                 merge( &left_block, &right_block);
                 
             } else {
                 perror("Failed to fork thread");
+                exit(EXIT_FAILURE);
             }
             
         } else {
-                pthread_mutex_unlock(mut);
+                pthread_mutex_unlock(mut); //Mut lock at top of if statement freed here
+                //If number_of_threads > number of processors available, mergesort is run on the same thread as parent
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -136,6 +136,8 @@ int main(int argc, char *argv[]) {
 
     //Getting the number of threads online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
+
+    //Creating shared memory for number_of_processes variable 
     number_of_processes = (int*)mmap(NULL, sizeof *number_of_processes, PROT_READ | PROT_WRITE, 
                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *number_of_processes = 0;
@@ -143,6 +145,7 @@ int main(int argc, char *argv[]) {
     mut =  mmap(NULL, sizeof(*mut), PROT_READ | PROT_WRITE, 
             MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
+    //Initializing attribute for mutex
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
@@ -154,13 +157,12 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    int parent = getpid();
-
-    //Getting rlimit for memory ans setting new limit
+        //Getting rlimit for memory and setting new limitit
     int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("WARNING: memory limit couldn't be set");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
@@ -172,14 +174,12 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
-
     printf("starting---\n");
     merge_sort(&start_block);
+    //Waiting for child processes to finish
     wait(0);
-    if (getpid() == parent){
-        printf("---ending\n");
-        printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
-        exit(EXIT_SUCCESS);
-    }
+    printf("---ending\n");
+    printf(is_sorted(data, size) ? "sorted\n" : "not sorted\n");
+    exit(EXIT_SUCCESS);
 
 }

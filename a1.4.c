@@ -105,7 +105,7 @@ void *merge_sort(void *args) {
 
         } else{
             //If number_of_threads > number of processors available, mergesort is run on the same thread as parent
-            pthread_mutex_unlock(&mut);
+            pthread_mutex_unlock(&mut); //Mut lock at top of if statement freed here
             merge_sort(&left_block);
         }
 

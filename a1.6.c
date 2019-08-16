@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
     if(f == 0) {
         merge_sort(&right_block);
         
-        //Return sorted array to parent process through pupe
+        //Return sorted array to parent process through pipe
         close(p[0]);
         write(p[1], right_block.first, right_block.size * sizeof(int));    
 
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
     } else if ( f > 0) { 
         merge_sort(&left_block);
 
-        //Reading right array sorted data sent by the child process from the pope
+        //Reading right array sorted data sent by the child process from the pipe
         close(p[1]);
         read(p[0], right_block.first, right_block.size * sizeof(int));
 
