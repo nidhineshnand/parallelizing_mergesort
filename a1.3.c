@@ -86,7 +86,7 @@ void merge_sort(struct block *my_data) {
     }
 }
 
-/* Merge sort the data. */
+/* Adapter method that allows merge sort to be directly called by thread without changing anything with mergesort */
 void *merge_sort_multi(void *args) {
     struct block *my_data = args;
     merge_sort(my_data);

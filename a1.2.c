@@ -79,8 +79,9 @@ bool is_sorted(int data[], int size) {
 }
 
 int main(int argc, char *argv[]) {
-   long size;
+    long size;
     struct rlimit rlim;
+    int err;
 
     if (argc < 2) {
         size = SIZE;
@@ -98,7 +99,7 @@ int main(int argc, char *argv[]) {
     }
 
     //Initilizing attribute for thread
-    int err;
+    
     pthread_attr_t attr;
     err = pthread_attr_init(&attr);
     if (err != 0){
