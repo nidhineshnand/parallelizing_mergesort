@@ -21,8 +21,6 @@
 #include <inttypes.h>
 #include <sys/wait.h> 
 
-
-
 #define SIZE    100000
 
 struct block {

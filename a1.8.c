@@ -22,23 +22,13 @@
 #include <sys/wait.h> 
 #include <sys/mman.h>
 
-
-
 #define SIZE    100000000
-
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 struct block {
     int size;
     int *first;
 };
 
-
-
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -85,7 +75,7 @@ bool is_sorted(int data[], int size) {
 }
 
 int main(int argc, char *argv[]) {
-   long size;
+    long size;
     struct rlimit rlim;
 
     if (argc < 2) {
@@ -94,15 +84,18 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
-    int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    //Getting rlimit for stack and setting new limit
+    int val = getrlimit(RLIMIT_AS, &rlim);
+    rlim.rlim_cur = size*12;
+
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("Error: Memory limit couldn't be set:");
+        exit(EXIT_FAILURE);
     }
 
     struct block start_block;
 
+    //Setting up the mergesort array as a shared area of memory
     int *data;
     data = (int*) mmap(NULL, sizeof(int) * size, PROT_READ | PROT_WRITE, 
                 MAP_ANONYMOUS | MAP_SHARED, -1, 0);
@@ -114,7 +107,6 @@ int main(int argc, char *argv[]) {
         data[i] = rand();
     }
 
-    //Setting structs so that they are globally accessible
     struct block left_block;
     struct block right_block;
     left_block.size = start_block.size / 2;
@@ -123,19 +115,20 @@ int main(int argc, char *argv[]) {
     right_block.first = start_block.first + left_block.size;
 
     int err, status;
-
-
     printf("starting---\n");
 
+    //Forking new process
     int f = fork();
     
+    //Mergesort right block on the child process
     if(f == 0) {
         merge_sort(&right_block);
-        //printf(is_sorted(right_block.first, right_block.size) ? "sorted\n" : "not sorted\n");
 
+    //Mergesort left block on the parent process
     } else if ( f > 0) {
         merge_sort(&left_block);
 
+        //Waiting for child processes to finish before array is merged
         wait(0);
         merge( &left_block, &right_block);
 
@@ -145,6 +138,7 @@ int main(int argc, char *argv[]) {
         
     } else {
         perror("Failed to fork thread");
+        exit(EXIT_FAILURE);
     }
      
 }
