@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory and setting new limit
+    //Getting rlimit for stack and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
     rlim.rlim_cur = size*12;
 
@@ -99,7 +99,6 @@ int main(int argc, char *argv[]) {
     }
 
     //Initilizing attribute for thread
-    
     pthread_attr_t attr;
     err = pthread_attr_init(&attr);
     if (err != 0){
@@ -112,7 +111,6 @@ int main(int argc, char *argv[]) {
     pthread_attr_getstacksize(&attr, &stack_size);
     
     //Setting stack size only if the size varible is greate then the lower limit of stack size
-    err = 0;
     stack_size = size*10;
     if( stack_size > PTHREAD_STACK_MIN){
         err = pthread_attr_setstacksize(&attr, stack_size);
@@ -155,6 +153,8 @@ int main(int argc, char *argv[]) {
     }
 
     merge_sort(&right_block);
+    
+    //Joining thread before merging
     pthread_join(thread, NULL);
     merge( &left_block, &right_block);
 

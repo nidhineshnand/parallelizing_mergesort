@@ -78,7 +78,7 @@ void merge_sort(struct block *my_data) {
             exit(EXIT_FAILURE);
         }
         
-        //Joining threads to allow them to be merged
+        //Joining threads to allow the array to be merged
         pthread_join(thread_left, NULL);
         pthread_join(thread_right, NULL);
 
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory and setting new limit
+    //Getting rlimit for stack and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
     rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
@@ -127,10 +127,11 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    //Setting new memory limit on thread
+    //Initilizing attribute for thread
     size_t stack_size;
     pthread_attr_getstacksize(&attr, &stack_size);
     
+    //Setting stack size only if the size varible is greate then the lower limit of stack size
     stack_size = size*10;
     if( stack_size > PTHREAD_STACK_MIN){
         err = pthread_attr_setstacksize(&attr, stack_size);
