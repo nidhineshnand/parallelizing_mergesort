@@ -24,7 +24,6 @@
 #define PTHREAD_STACK_MIN 16384
 #define STACK_SIZE_MIN 16777216 //16MB
 
-
 struct block {
     int size;
     int *first;
@@ -62,7 +61,7 @@ void merge_sort(struct block *my_data) {
         merge(&left_block, &right_block);
     }
 }
-/* Merge sort the data. */
+/* Adapter method that allows merge sort to be directly called by thread without changing anything with mergesort */
 void *merge_sort_multi(void *args) {
     struct block *my_data = args;
     merge_sort(my_data);
@@ -89,32 +88,34 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory ans setting new limit
+    //Getting rlimit for memory and setting new limit
     int val = getrlimit(RLIMIT_AS, &rlim);
-    
-    int stack_size = size*12;
-    if (stack_size > STACK_SIZE_MIN){
-        rlim.rlim_cur = size*12;
-    } else {
-        rlim.rlim_cur = stack_size;
+    rlim.rlim_cur = size*12;
+
+    if(setrlimit(RLIMIT_STACK, &rlim) != 0){
+        perror("WARNING: Memory limit couldn't be set:");
     }
 
-    int s;
+    //Initilizing attribute for thread
+    int err;
     pthread_attr_t attr;
-    s = pthread_attr_init(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_init");
+    err = pthread_attr_init(&attr);
+    if (err != 0){
+        perror("Warning: Thread attribute not initilized");
     }
+
     //Setting new memory limit on thread
     size_t stack_size;
-    pthread_attr_getstacksize(&attr,&stack_size);
+    pthread_attr_getstacksize(&attr, &stack_size);
     
-    stack_size = size*8;
+    //Setting stack size only if the size varible is greate then the lower limit of stack size
+    err = 0;
+    stack_size = size*10;
     if( stack_size > PTHREAD_STACK_MIN){
-        s = pthread_attr_setstacksize(&attr, stack_size);
+        err = pthread_attr_setstacksize(&attr, stack_size);
     }
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_setstacksize");
+    if (err != 0){
+        perror("Warning: Thread stack size was not be changed");
     }
 
     struct block start_block;
@@ -133,23 +134,20 @@ int main(int argc, char *argv[]) {
     right_block.size = left_block.size + (start_block.size % 2);
     right_block.first = start_block.first + left_block.size;
 
-    //Creating new thread
-    pthread_t thread;
-    int err;
 
+    pthread_t thread;
     printf("starting---\n");
 
-    //Error checking for thread
+     //Creating new thread with set attributes and callng merge sort
     err = pthread_create(&thread, &attr, merge_sort_multi , (void*)&left_block);
-
     if (err){
         printf("An error occured: %d", err);
         return 1;
     }
 
-    s = pthread_attr_destroy(&attr);
-    if (s != 0){
-        handle_error_en(s, "pthread_attr_destroy");
+    err = pthread_attr_destroy(&attr);
+    if (err != 0){
+        perror("Warning: Thread attribute could not be destroyed");
     }
 
     merge_sort(&right_block);
