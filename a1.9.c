@@ -22,12 +22,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h> 
 
-
-
 #define SIZE    1000
-
-#define handle_error_en(en, msg) \
-    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
 
 long number_of_processors;
 static int *number_of_processes;
@@ -36,16 +31,11 @@ int parent;
 static int *data;
 pthread_mutex_t *mut;
 
-
-
 struct block {
     int size;
     int *first;
 };
 
-// void print_block_data(struct block *blk) {
-//     printf("size: %d address: %p\n", blk->size, blk->first);
-// }
 
 /* Combine the two halves back together. */
 void merge(struct block *left, struct block *right) {
@@ -67,7 +57,6 @@ void merge(struct block *left, struct block *right) {
 /* Merge sort the data. */
 void merge_sort(struct block *my_data) {
     
-    // print_block_data(my_data);
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
@@ -76,33 +65,39 @@ void merge_sort(struct block *my_data) {
         right_block.size = left_block.size + (my_data->size % 2);
         right_block.first = my_data->first + left_block.size; 
 
+        //Locking number_of_processes and checking to see if a new process can be created
         pthread_mutex_lock(mut);
         if (*number_of_processes < number_of_processors){    
             *number_of_processes = *number_of_processes + 1;
             pthread_mutex_unlock(mut);
             
+            //Forking new process
             int f = fork();
+            //Mergesort right block on the child process
             if(f == 0) {
                 merge_sort(&right_block); 
                 
+                //Decrementing number_of_processes counter as the child process has finished
                 pthread_mutex_lock(mut);
                 *number_of_processes = *number_of_processes - 1;
                 pthread_mutex_unlock(mut);
                 
                 exit(EXIT_SUCCESS);   
                 
+            //Mergesort left block on the parent process
             } else if ( f > 0) {
                 merge_sort(&left_block);
-                waitpid(f, NULL, 0);
+                waitpid(f, NULL, 0); //Waiting for child process to completely finish before merging the array
                 merge( &left_block, &right_block);
 
             } else {
-                perror("Failed to fork thread");
+                perror("Error: Failed to fork thread");
+                exit(EXIT_FAILURE);
             }
             
         } else {
-                //printf("%d\n", *number_of_processes);
                 pthread_mutex_unlock(mut);
+                 //If number_of_threads > number of processors available, mergesort is run on the same process as parent
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -116,7 +111,6 @@ void merge_sort(struct block *my_data) {
 bool is_sorted(int data[], int size) {
     bool sorted = true;
     for (int i = 0; i < size - 1; i++) {
-        //printf("Value: %d\n", data[i]);
         if (data[i] > data[i + 1])
             sorted = false;
     }
@@ -129,6 +123,7 @@ int main(int argc, char *argv[]) {
 
     //Getting the number of threads online
     number_of_processors = sysconf(_SC_NPROCESSORS_ONLN);
+    //Creating shared memory for number_of_processes variable 
     number_of_processes = (int*)mmap(NULL, sizeof *number_of_processes, PROT_READ | PROT_WRITE, 
                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     *number_of_processes = 0;
@@ -139,13 +134,15 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-    //Getting rlimit for memory and setting new limit
+   //Getting rlimit for memory and setting new limitit
     int val = getrlimit(RLIMIT_STACK, &rlim);
-    rlim.rlim_cur = 1024L*1024L*1024L;//size*10;
+    rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
-        perror("WARNING: memory limit couldn't be set:");
+        perror("WARNING: memory limit couldn't be set");
+        exit(EXIT_FAILURE);
     }
 
+    //Creating shared memory for the data array and mutex
     struct block start_block;
     data =  mmap(NULL, sizeof(int) * size, PROT_READ | PROT_WRITE, 
                 MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -153,6 +150,7 @@ int main(int argc, char *argv[]) {
     mut =  mmap(NULL, sizeof(*mut), PROT_READ | PROT_WRITE, 
                MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
+    //Initializing attribute for mutex
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);

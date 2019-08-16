@@ -54,8 +54,7 @@ void merge(struct block *left, struct block *right) {
 void *merge_sort(void *args) {
     struct block *my_data = args;
     int err;
-    
-    // print_block_data(my_data);
+
     if (my_data->size > 1) {
         struct block left_block;
         struct block right_block;
@@ -100,17 +99,17 @@ void *merge_sort(void *args) {
                 //Reading right array sorted data sent by the child process from the pipe
                 close(pdata[1]);
                 read(pdata[0], right_block.first, right_block.size * sizeof(int));
-                waitpid(f, NULL, 0); //Waiting for child process to completely finish to merge the data
+                waitpid(f, NULL, 0); //Waiting for child process to completely finish before merging the array
                 merge( &left_block, &right_block);
                 
             } else {
-                perror("Failed to fork thread");
+                perror("Error: Failed to fork thread");
                 exit(EXIT_FAILURE);
             }
             
         } else {
                 pthread_mutex_unlock(mut); //Mut lock at top of if statement freed here
-                //If number_of_threads > number of processors available, mergesort is run on the same thread as parent
+                //If number_of_threads > number of processors available, mergesort is run on the same process as parent
                 merge_sort(&right_block);
                 merge_sort(&left_block);
                 merge( &left_block, &right_block);
@@ -157,7 +156,7 @@ int main(int argc, char *argv[]) {
         size = atol(argv[1]);
     }
 
-        //Getting rlimit for memory and setting new limitit
+    //Getting rlimit for memory and setting new limitit
     int val = getrlimit(RLIMIT_STACK, &rlim);
     rlim.rlim_cur = size*12;
     if(setrlimit(RLIMIT_STACK, &rlim) != 0){
